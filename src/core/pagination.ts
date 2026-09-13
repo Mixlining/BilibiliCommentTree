@@ -30,23 +30,13 @@ import {
   updateCommentReplyTree,
 } from './tree'
 
-export function updateCommentReplyPaginationHead(component: any, currentPage: number) {
-  const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
-  if (!head)
-    return
-  const prefix = buildPaginationPagePrefixText(currentPage)
-  const first = head.firstChild
-  if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== prefix)
-    first.textContent = prefix
-}
-
-export function restoreCommentReplyPaginationHead(component: any) {
+export function setCommentReplyPaginationHead(component: any, text: string) {
   const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
   if (!head)
     return
   const first = head.firstChild
-  if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== PAGINATION_OF_TEXT)
-    first.textContent = PAGINATION_OF_TEXT
+  if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== text)
+    first.textContent = text
 }
 
 export function clearCommentReplyPaginationState(renderer: any, restoreCurrentPage: boolean) {
@@ -107,7 +97,7 @@ export function suspendCommentReplyPaginationForNativeCollapse(
   invalidateCommentReplyPaginationLoading(renderer)
 }
 
-export function getCommentReplyPaginationState(renderer: any): CommentReplyPaginationState {
+function getCommentReplyPaginationState(renderer: any): CommentReplyPaginationState {
   const identity = getCommentReplyPaginationIdentity(renderer)
   const existing = commentReplyPaginationStates.get(renderer)
   if (existing && existing.identity === identity)
@@ -471,7 +461,7 @@ function expandAllCommentReplies(renderer: any): Promise<void> {
     requestAnimationFrame(() => {
       if (renderer.isConnected && getCommentReplyTreeMode() !== null) {
         if (state.allRepliesExpanded)
-          restoreCommentReplyPaginationHead(renderer)
+          setCommentReplyPaginationHead(renderer, PAGINATION_OF_TEXT)
         updateCommentReplyTree(renderer)
       }
     })
@@ -811,12 +801,12 @@ export function patchCommentReplyPaginationPrototype(classConstructor: any) {
         if (state.allRepliesExpanded) {
           // 批量展开完成后恢复 B 站原生的「共 x 页」，不要继续显示
           // 我们在逐页阅读模式下使用的「第 1 页，共 x 页」。
-          queueMicrotask(() => restoreCommentReplyPaginationHead(this))
+          queueMicrotask(() => setCommentReplyPaginationHead(this, PAGINATION_OF_TEXT))
           return []
         }
         const totalPage = Number(this.totalPage) || 0
         const hasNext = currentPage < totalPage
-        queueMicrotask(() => updateCommentReplyPaginationHead(this, currentPage))
+        queueMicrotask(() => setCommentReplyPaginationHead(this, buildPaginationPagePrefixText(currentPage)))
         if (!hasNext)
           return []
 

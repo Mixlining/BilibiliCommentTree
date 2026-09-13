@@ -16,7 +16,7 @@ export function getReplyAtAuthorFromMessage(replyItem: any): string | null {
 }
 
 /** 去掉「回复 @xxx :」前缀并压空白，供缓存与引用展示 */
-export function normalizeReplyMessageText(text: string | null | undefined): string | null {
+function normalizeReplyMessageText(text: string | null | undefined): string | null {
   if (typeof text !== 'string')
     return null
   // @ 已可由 [^\s:：]+ 吞掉，无需再写 @?
@@ -90,7 +90,10 @@ export function getCommentRendererMessageText(renderer: HTMLElement): string | n
 
   const raw = contentsList
     .map((contents) => {
-      // 忽略我们隐藏的「回复 @」前缀节点，避免污染正文缓存
+      // 忽略我们隐藏的「回复 @」前缀节点，避免污染正文缓存；
+      // 无该标记时子树无需克隆
+      if (!contents.querySelector('[data-bewly-hide-reply-at]'))
+        return contents.textContent || ''
       const clone = contents.cloneNode(true) as HTMLElement
       clone.querySelectorAll('[data-bewly-hide-reply-at]').forEach(el => el.remove())
       return clone.textContent || ''

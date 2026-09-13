@@ -42,10 +42,10 @@ export function buildPaginationPagePrefixText(currentPage: number): string {
   return `第${currentPage}页，共`
 }
 
-export const BRANCH_COLLAPSE_LABEL = '收起此评论及回复'
-export const BRANCH_EXPAND_LABEL = '展开此评论及回复'
-export const TAIL_COLLAPSE_LABEL = '收起后续同级评论'
-export const TAIL_EXPAND_LABEL = '展开后续同级评论'
+const BRANCH_COLLAPSE_LABEL = '收起此评论及回复'
+const BRANCH_EXPAND_LABEL = '展开此评论及回复'
+const TAIL_COLLAPSE_LABEL = '收起后续同级评论'
+const TAIL_EXPAND_LABEL = '展开后续同级评论'
 export const OFFPAGE_REPLY_WORD = '回复'
 export const OFFPAGE_BADGE_TEXT = '不在本页'
 export const MISSING_PARENT_LABEL = '评论不在本页或已丢失'

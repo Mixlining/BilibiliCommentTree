@@ -7,7 +7,7 @@ import { findCommentRichTextContents } from './replyText'
 
 const commentReplyAtPrefixObservers = new WeakMap<HTMLElement, MutationObserver>()
 
-export function disconnectCommentReplyAtPrefixObserver(renderer: HTMLElement) {
+function disconnectCommentReplyAtPrefixObserver(renderer: HTMLElement) {
   const observer = commentReplyAtPrefixObservers.get(renderer)
   if (!observer)
     return

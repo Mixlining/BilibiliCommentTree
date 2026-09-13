@@ -42,10 +42,6 @@ function normalizeSettings(value: unknown): ScriptSettings {
 
 let currentSettings: ScriptSettings = normalizeSettings(GM_getValue(STORAGE_KEY, undefined))
 
-export function getScriptSettings(): ScriptSettings {
-  return currentSettings
-}
-
 export function getCommentReplyTreeMode(): CommentReplyTreeMode | null {
   if (!currentSettings.enabled)
     return null

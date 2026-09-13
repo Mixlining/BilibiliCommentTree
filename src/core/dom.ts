@@ -18,17 +18,8 @@ export function findCommentComponentLifecycleMethod(
   prototype: object,
   methodName: string,
 ): ((...args: any[]) => any) | null {
-  let current: object | null = prototype
-  while (current && current !== Object.prototype) {
-    const descriptor = Object.getOwnPropertyDescriptor(current, methodName)
-    if (descriptor) {
-      if (typeof descriptor.value === 'function')
-        return descriptor.value
-      return null
-    }
-    current = Object.getPrototypeOf(current)
-  }
-  return null
+  const descriptor = findCommentPropertyDescriptor(prototype, methodName)
+  return descriptor && typeof descriptor.value === 'function' ? descriptor.value : null
 }
 
 /**
@@ -116,14 +107,10 @@ export function patchCommentComponentUpdate(
   return true
 }
 
-export function toIdString(id: unknown): string | null {
+function toIdString(id: unknown): string | null {
   if (id === null || id === undefined || id === '')
     return null
   return String(id)
-}
-
-export function getReplyOid(replyItem: any): string | null {
-  return toIdString(replyItem?.oid_str ?? replyItem?.oid)
 }
 
 export function getReplyRpid(replyItem: any): string | null {
@@ -198,7 +185,7 @@ export function findCommentPropertyDescriptor(
 
 export function getCommentReplyPaginationIdentity(renderer: any): string {
   const data = getCommentReplyData(renderer) ?? {}
-  const oid = toIdString(renderer.oid) ?? getReplyOid(data)
+  const oid = toIdString(renderer.oid) ?? toIdString(data.oid_str ?? data.oid)
   const type = toIdString(renderer.type) ?? toIdString(data.type ?? data.business)
   const root = toIdString(renderer.root) ?? getReplyRpid(data) ?? getReplyRootRpid(data)
   return [oid ?? '', type ?? '', root ?? ''].join('|')

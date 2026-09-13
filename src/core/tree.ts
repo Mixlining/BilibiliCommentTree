@@ -28,7 +28,9 @@ import {
   MAX_COMMENT_REPLY_TREE_DEPTH,
   MIN_COMMENT_REPLY_TREE_CONTENT_WIDTH,
   MISSING_PARENT_LABEL,
+  PAGINATION_OF_TEXT,
   pendingCommentReplyTreeLayoutUpdates,
+  SVG_NAMESPACE,
 } from './constants'
 import {
   ensureCommentShadowStyle,
@@ -44,7 +46,7 @@ import { clearCommentReplyOffpageParentLabel, updateCommentReplyOffpageParentLab
 import {
   clearCommentReplyPaginationState,
   invalidateCommentReplyPaginationLoading,
-  restoreCommentReplyPaginationHead,
+  setCommentReplyPaginationHead,
   suspendCommentReplyPaginationForNativeCollapse,
   updateCommentReplyExpandAllControl,
 } from './pagination'
@@ -56,8 +58,6 @@ import {
   pickRicherReplyMessageText,
   truncateReplyMessageSnippet,
 } from './replyText'
-
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 
 export function getCommentReplyTreeState(component: object): CommentReplyTreeState {
   let state = commentReplyTreeStates.get(component)
@@ -73,16 +73,6 @@ export function getCommentReplyTreeState(component: object): CommentReplyTreeSta
       originalOrderByRenderer: new WeakMap(),
     }
     commentReplyTreeStates.set(component, state)
-  }
-  else {
-    if (!state.collapsedTailKeys)
-      state.collapsedTailKeys = new Set()
-    if (!state.branchToggleOffsetByKey)
-      state.branchToggleOffsetByKey = new Map()
-    if (!state.tailToggleOffsetByKey)
-      state.tailToggleOffsetByKey = new Map()
-    if (!state.replyMetaByRpid)
-      state.replyMetaByRpid = new Map()
   }
   return state
 }
@@ -1336,7 +1326,7 @@ export function updateCommentReplyTree(component: any) {
   }
   if (!paginationEnabled) {
     clearCommentReplyPaginationState(component, true)
-    restoreCommentReplyPaginationHead(component)
+    setCommentReplyPaginationHead(component, PAGINATION_OF_TEXT)
   }
   const existingState = commentReplyTreeStates.get(component)
   const paginationState = commentReplyPaginationStates.get(component)
@@ -1494,8 +1484,9 @@ export function updateCommentReplyTree(component: any) {
     })
   })
   // 未进入树序的节点恢复显示
+  const orderedRenderers = new Set(orderedNodes.map(({ node }) => node.renderer))
   replyRenderers.forEach((replyRenderer) => {
-    if (!orderedNodes.some(({ node }) => node.renderer === replyRenderer)) {
+    if (!orderedRenderers.has(replyRenderer)) {
       setCommentReplyAtPrefixHidden(replyRenderer, false)
       clearCommentReplyOffpageParentLabel(replyRenderer)
     }
