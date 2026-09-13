@@ -1,0 +1,12 @@
+minimumReleaseAgeExcludePrune: true
+
+trustPolicy: no-downgrade
+# semver@6.3.1 被 trust 策略误报为「possible package takeover」，
+# 这是 2023 年 npm 安全团队发布的历史版本，显式豁免。
+trustPolicyExclude:
+  - semver@6.3.1
+
+shellEmulator: true
+
+allowBuilds:
+  '@parcel/watcher': true

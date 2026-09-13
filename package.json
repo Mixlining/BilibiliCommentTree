@@ -1,0 +1,23 @@
+{
+  "name": "bilibili-comment-tree",
+  "displayName": "BilibiliCommentTree",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "按回复关系整理 bilibili 评论区楼中楼的 Tampermonkey 脚本：树状排序、引导线与折叠",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^9.5.1",
+    "eslint": "^10.10.0",
+    "sass": "^1.104.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.2",
+    "vite-plugin-monkey": "^8.1.1"
+  }
+}
