@@ -16,7 +16,7 @@
     "@antfu/eslint-config": "^9.5.1",
     "eslint": "^10.10.0",
     "sass": "^1.104.0",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vite": "^8.2.2",
     "vite-plugin-monkey": "^8.1.1"
   }

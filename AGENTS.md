@@ -13,7 +13,7 @@ BilibiliCommentTree：B 站评论区树状排序与折叠的 Tampermonkey usersc
 
 ## 工具链约定
 
-- **TypeScript 锁定 5.9.x**（`^5.9.2`）：Vue 生态与 typescript-eslint 均不兼容 TS 7，不要升级。
+- **TypeScript 锁定 6.0.x**（`^6.0.3`）：TS 6.0 与 5.9 API 兼容，typescript-eslint 可正常工作；TS 7（原生移植）不兼容 Vue 生态与 typescript-eslint，不要升级。
 - **pnpm 11**：依赖构建脚本审批走 `pnpm-workspace.yaml` 的 `allowBuilds`；供应链策略 `trustPolicy: no-downgrade`，误报用 `trustPolicyExclude` 豁免（如 `semver@6.3.1`），不要整体关闭策略。
 - ESLint 使用 `@antfu/eslint-config`；其内置 perfectionist 已负责导入排序，不要再引入 `eslint-plugin-simple-import-sort`（两者会循环冲突）。
 - GM_* API 类型声明在 `src/types/gm.d.ts`，只声明用到的最小集合，不引入 `@types/tampermonkey`。
