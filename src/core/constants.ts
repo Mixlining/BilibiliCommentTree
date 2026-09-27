@@ -34,6 +34,11 @@ export const COMMENT_REPLY_EXPAND_ALL_IDX = -2
 // 「展开全部」每次最多顺序加载的回复页数，后续点击继续补齐。
 export const COMMENT_REPLY_BATCH_PAGE_LIMIT = 5
 export const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
+export const COMMENT_REPLY_CONTAINER_ATTRIBUTE = 'data-bewly-comment-reply-container'
+export const COMMENT_REPLY_CONTAINER_HEIGHT_VAR = '--bew-comment-reply-container-height'
+export const COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT = 240
+export const COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT = 960
+export const COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT = 480
 export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 
 // 文案硬编码中文（来源：BewlyCat src/_locales/cmn-CN.yml）
@@ -392,6 +397,32 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
         min-height: var(--bew-space-6, 24px) !important;
         overflow: hidden !important;
         visibility: hidden !important;
+      }
+
+      /*
+       * 展开后的回复树放进固定高度容器，超出时只在容器内滚动，
+       * 避免回复很多（尤其「展开全部」）时把整层评论和页面撑得过长。
+       */
+      :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}]) #expander-contents {
+        max-height: var(${COMMENT_REPLY_CONTAINER_HEIGHT_VAR}, 480px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        /*
+         * 容器嵌在页面正文流中，不能使用 overscroll-behavior: contain：
+         * Chrome 会对未溢出的滚动容器同样生效，指针停在回复区时滚轮会被吞掉；
+         * 溢出时滚到边界也无法继续滚动页面。保留默认滚动链。
+         */
+        /* 滚动条出现/消失都不改变可用宽度，避免缩进与线条被反复重算 */
+        scrollbar-gutter: stable;
+      }
+
+      /* 原生「收起回复」在回复列表末尾；滚动时钉在容器底边保持可达 */
+      :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}]) #expander-contents > #expander-footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 1;
+        /* 只依赖 B 站原生背景变量，明暗主题自动适配 */
+        background: var(--bg1, var(--bew-bg, #fff));
       }
 
       .bewly-comment-missing-parent__body {
