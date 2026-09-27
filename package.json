@@ -2,7 +2,7 @@
   "name": "bilibili-comment-tree",
   "displayName": "BilibiliCommentTree",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "pnpm@11.27.0",
   "description": "按回复关系整理 bilibili 评论区楼中楼的 Tampermonkey 脚本：树状排序、引导线与折叠",
