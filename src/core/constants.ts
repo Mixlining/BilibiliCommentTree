@@ -25,21 +25,30 @@ export const COMMENT_REPLY_TREE_FALLBACK_AVATAR_RADIUS = 12
 export const COMMENT_REPLY_TREE_INDENT_STEP = 'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
 export const COMMENT_REPLY_TREE_GUIDES_ID = 'bewly-comment-reply-tree-guides'
 export const COMMENT_REPLY_EXPAND_ALL_ID = 'bewly-comment-expand-all-replies'
+export const COMMENT_REPLY_PAGE_SELECT_ID = 'bewly-comment-reply-page-select'
+export const COMMENT_REPLY_PAGE_HEAD_ID = 'bewly-comment-reply-page-head'
 export const COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE = 'data-bewly-comment-expand-all-loading'
 // B 站分页项使用从 0 开始的 idx；-1 已被原生用于省略号，-2 留给我们的
 // 「展开全部」动作，避免把它误当成真实页码。
 export const COMMENT_REPLY_EXPAND_ALL_IDX = -2
+// 「展开全部」每次最多顺序加载的回复页数，后续点击继续补齐。
+export const COMMENT_REPLY_BATCH_PAGE_LIMIT = 5
 export const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
 export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 
 // 文案硬编码中文（来源：BewlyCat src/_locales/cmn-CN.yml）
 export const LOADING_TEXT = '加载中…'
 export const LOAD_MORE_TEXT = '加载更多'
-export const EXPAND_ALL_TEXT = '展开全部回复'
-export const PAGINATION_OF_TEXT = '共'
+export const EXPAND_ALL_TEXT = '加载全部'
+export const ALL_PAGES_TEXT = '全部'
+export const SELECT_REPLY_PAGE_TEXT = '选择回复页码'
 
-export function buildPaginationPagePrefixText(currentPage: number): string {
-  return `第${currentPage}页，共`
+export function buildPaginationPageNumberText(page: number): string {
+  return `第${page}页`
+}
+
+export function buildPaginationPageTotalText(totalPage: number): string {
+  return `，共 ${totalPage} 页`
 }
 
 const BRANCH_COLLAPSE_LABEL = '收起此评论及回复'
@@ -66,6 +75,8 @@ export function buildOffpageParentTitle(authorName: string): string {
 /** 楼中楼已见过的回复关系（跨分页保留，用于父节点不在当前页时回溯挂载） */
 export interface CommentReplyTreeCachedMeta {
   authorName: string | null
+  /** 头像地址，供离页父评占位显示真实头像 */
+  avatarUrl: string | null
   ctime: number | null
   /** 纯文本正文（已去掉「回复 @」前缀），用于离页父评引用 */
   messageText: string | null
@@ -135,6 +146,8 @@ export interface CommentReplyPaginationState {
   loading?: Promise<any>
   expandAllLoading?: Promise<void>
   allRepliesExpanded?: boolean
+  /** 直接选页只显示目标页；之后的「加载更多」从该页继续追加。 */
+  pageJump?: { previousPage: number, allRepliesExpanded?: boolean }
   /**
    * 从已渲染回复组件捕获的用户交互状态。楼中楼接口可能返回点赞前的
    * 缓存数据，后续分页合并时需要以本地刚完成的操作为准。
@@ -197,9 +210,82 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
         color: var(--bew-text-3) !important;
       }
 
+      #pagination-head:has(+ #${COMMENT_REPLY_PAGE_HEAD_ID}) {
+        display: none !important;
+      }
+
+      #${COMMENT_REPLY_PAGE_HEAD_ID} {
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+      }
+
+      #${COMMENT_REPLY_PAGE_SELECT_ID} {
+        min-width: var(--bew-space-6, 24px);
+        min-height: var(--bew-space-6, 24px);
+        padding: 0 var(--bew-space-1, 4px);
+        border: 0;
+        border-radius: var(--bew-radius-sm, 4px);
+        background: transparent;
+        color: var(--bew-text-2, var(--text2, #61666d));
+        font: inherit;
+        cursor: pointer;
+        vertical-align: baseline;
+      }
+
+      #${COMMENT_REPLY_PAGE_SELECT_ID}:is(:hover, :active):not(:disabled) {
+        color: var(--bew-theme-color, #00aeec);
+        background: var(--bew-fill-1, var(--graph_bg_thin, #f1f2f3));
+      }
+
+      #${COMMENT_REPLY_PAGE_SELECT_ID}:focus-visible {
+        outline: var(--bew-space-0-5, 2px) solid var(--bew-theme-color, #00aeec);
+        outline-offset: var(--bew-space-0-5, 2px);
+      }
+
+      #${COMMENT_REPLY_PAGE_SELECT_ID}:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+
+      #${COMMENT_REPLY_PAGE_SELECT_ID} option {
+        background: var(--bew-bg, var(--bg1, #fff));
+        color: var(--bew-text-1, var(--text1, #18191c));
+      }
+
+      #view-more:has(> #${COMMENT_REPLY_EXPAND_ALL_ID}) {
+        display: flex;
+        align-items: center;
+        column-gap: var(--bew-space-2, 8px);
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* 展开后的按钮属于 Lit 分页列表，用 CSS 排列，不移动其 DOM 节点。 */
+      #pagination:has(#pagination-body > [data-idx="${COMMENT_REPLY_EXPAND_ALL_IDX}"]) {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      #pagination:has(#pagination-body > [data-idx="${COMMENT_REPLY_EXPAND_ALL_IDX}"]) #pagination-body {
+        display: contents;
+      }
+
+      #pagination:has(#pagination-body > [data-idx="${COMMENT_REPLY_EXPAND_ALL_IDX}"]) #pagination-foot {
+        order: 1;
+      }
+
+      #pagination #pagination-body > [data-idx="${COMMENT_REPLY_EXPAND_ALL_IDX}"] {
+        order: 2;
+        flex-shrink: 0;
+        margin-inline-start: auto;
+        margin-inline-end: 0;
+      }
+
       #${COMMENT_REPLY_EXPAND_ALL_ID} {
-        min-height: 24px;
-        margin-inline-start: var(--bew-space-2, 8px);
+        flex-shrink: 0;
+        min-height: var(--bew-space-6, 24px);
+        margin-inline-start: auto;
         padding: 0;
         border: 0;
         background: transparent;
@@ -253,7 +339,7 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
         width: var(--bew-space-6, 24px);
         height: var(--bew-space-6, 24px);
         box-sizing: border-box;
-        border: 2px solid var(--bew-text-3, var(--text3, #9499a0));
+        border: 2px solid color-mix(in srgb, var(--bew-theme-color, #00aeec) 25%, transparent);
         border-top-color: var(--bew-theme-color, #00aeec);
         border-radius: 50%;
         animation: bewly-comment-expand-all-spin 0.8s linear infinite;
@@ -326,6 +412,19 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
         height: var(--bew-space-6, 24px);
         border-radius: var(--bew-radius-full, 50%);
         background: var(--bew-fill-2, var(--bg2, #f1f2f3));
+        overflow: hidden;
+      }
+
+      .bewly-comment-missing-parent__avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .bewly-comment-missing-parent[data-cached] .bewly-comment-missing-parent__body {
+        color: var(--bew-text-1, var(--text1, #18191c));
+        font-size: var(--bew-font-size-body, 15px);
+        line-height: var(--bew-line-height-body, 24px);
       }
 
       ${COMMENT_REPLY_TREE_GUIDES_CSS}

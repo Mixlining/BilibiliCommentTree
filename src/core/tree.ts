@@ -28,7 +28,6 @@ import {
   MAX_COMMENT_REPLY_TREE_DEPTH,
   MIN_COMMENT_REPLY_TREE_CONTENT_WIDTH,
   MISSING_PARENT_LABEL,
-  PAGINATION_OF_TEXT,
   pendingCommentReplyTreeLayoutUpdates,
   SVG_NAMESPACE,
 } from './constants'
@@ -36,6 +35,8 @@ import {
   ensureCommentShadowStyle,
   getCommentRendererAuthorName,
   getCommentReplyData,
+  getCommentReplyInvisibleIds,
+  getCommentReplyPaginationIdentity,
   getReplyAuthorName,
   getReplyParentRpid,
   getReplyRootRpid,
@@ -44,11 +45,16 @@ import {
 } from './dom'
 import { clearCommentReplyOffpageParentLabel, updateCommentReplyOffpageParentLabel } from './offpage'
 import {
+  getCommentReplyPageCache,
+  MAX_COMMENT_REPLY_CROSS_PAGE_CACHE_THREADS,
+  rememberCommentReplyPages,
+} from './pageCache'
+import {
   clearCommentReplyPaginationState,
   invalidateCommentReplyPaginationLoading,
-  setCommentReplyPaginationHead,
   suspendCommentReplyPaginationForNativeCollapse,
   updateCommentReplyExpandAllControl,
+  updateCommentReplyPaginationHead,
 } from './pagination'
 import { setCommentReplyAtPrefixHidden } from './prefix'
 import {
@@ -56,7 +62,6 @@ import {
   getReplyAtAuthorFromMessage,
   getReplyMessageText,
   pickRicherReplyMessageText,
-  truncateReplyMessageSnippet,
 } from './replyText'
 
 export function getCommentReplyTreeState(component: object): CommentReplyTreeState {
@@ -105,6 +110,7 @@ export function cacheCommentReplyTreeMeta(
   )
   const next: CommentReplyTreeCachedMeta = {
     authorName: getReplyAuthorName(replyItem) ?? previous?.authorName ?? null,
+    avatarUrl: replyItem?.member?.avatar ?? previous?.avatarUrl ?? null,
     ctime: getCommentReplyCtime(replyItem) ?? previous?.ctime ?? null,
     messageText,
     parentRpid: getReplyParentRpid(replyItem) ?? previous?.parentRpid ?? null,
@@ -112,6 +118,44 @@ export function cacheCommentReplyTreeMeta(
   }
   state.replyMetaByRpid.set(rpid, next)
   return next
+}
+
+/** 把已访问页的回复关系同步到树缓存；切到另一页时父评仍可被解析。 */
+function cacheCommentReplyTreeMetaList(
+  state: CommentReplyTreeState,
+  replies: any[] | undefined,
+) {
+  if (!Array.isArray(replies))
+    return
+  replies.forEach(reply => cacheCommentReplyTreeMeta(state, reply))
+}
+
+// B 站切页时可能销毁并重建 replies renderer；按楼层身份保留已见回复的
+// parent/root 与正文摘要，重建后仍能解析跨页父子关系。
+const commentReplyCrossPageMetaCaches = new Map<string, Map<string, CommentReplyTreeCachedMeta>>()
+
+function syncCommentReplyCrossPageMeta(
+  identity: string,
+  state: CommentReplyTreeState,
+) {
+  if (!identity.split('|').every(Boolean))
+    return
+  let cached = commentReplyCrossPageMetaCaches.get(identity)
+  if (!cached) {
+    cached = new Map()
+    commentReplyCrossPageMetaCaches.set(identity, cached)
+    while (commentReplyCrossPageMetaCaches.size > MAX_COMMENT_REPLY_CROSS_PAGE_CACHE_THREADS) {
+      const oldest = commentReplyCrossPageMetaCaches.keys().next().value
+      if (oldest === undefined)
+        break
+      commentReplyCrossPageMetaCaches.delete(oldest)
+    }
+  }
+  cached.forEach((meta, rpid) => {
+    if (!state.replyMetaByRpid.has(rpid))
+      state.replyMetaByRpid.set(rpid, meta)
+  })
+  state.replyMetaByRpid.forEach((meta, rpid) => cached!.set(rpid, meta))
 }
 
 interface CommentReplyTreeParentResolve {
@@ -1229,9 +1273,30 @@ function addMissingCommentReplyTreeParents(
       renderer.append(body)
     }
     const text = renderer.querySelector<HTMLElement>('.bewly-comment-missing-parent__text')!
-    const content = `${authorName ? `@${authorName} · ` : ''}${MISSING_PARENT_LABEL}${meta?.messageText ? `：${truncateReplyMessageSnippet(meta.messageText)}` : ''}`
+    // 缓存已提供原正文时直接载入父评论，不能仍标记为「不在本页」。
+    const content = `${authorName ? `@${authorName} · ` : ''}${meta?.messageText || MISSING_PARENT_LABEL}`
     if (text.textContent !== content)
       text.textContent = content
+    renderer.toggleAttribute('data-cached', Boolean(meta?.messageText))
+    const avatar = renderer.querySelector<HTMLElement>('.bewly-comment-missing-parent__avatar')!
+    const avatarUrl = typeof meta?.avatarUrl === 'string' && /^(?:https?:)?\/\//.test(meta.avatarUrl)
+      ? meta.avatarUrl
+      : null
+    if (meta?.messageText && avatarUrl) {
+      let image = avatar.querySelector('img')
+      if (!image) {
+        image = document.createElement('img')
+        image.alt = ''
+        avatar.replaceChildren(image)
+      }
+      if (image.getAttribute('src') !== avatarUrl)
+        image.setAttribute('src', avatarUrl)
+    }
+    else {
+      const avatarText = meta?.messageText ? authorName?.slice(0, 1) || '·' : '?'
+      if (avatar.textContent !== avatarText)
+        avatar.textContent = avatarText
+    }
     if (renderer.parentElement !== replyContainer)
       replyContainer.append(renderer)
     retained.add(rpid)
@@ -1326,10 +1391,13 @@ export function updateCommentReplyTree(component: any) {
   }
   if (!paginationEnabled) {
     clearCommentReplyPaginationState(component, true)
-    setCommentReplyPaginationHead(component, PAGINATION_OF_TEXT)
   }
+  updateCommentReplyPaginationHead(component)
   const existingState = commentReplyTreeStates.get(component)
   const paginationState = commentReplyPaginationStates.get(component)
+  const pageCache = getCommentReplyPageCache(component)
+  if (pageCache)
+    rememberCommentReplyPages(component, pageCache)
   if (treeMode === null && !existingState?.enabled) {
     component.removeAttribute('data-bewly-comment-reply-tree')
     return
@@ -1346,6 +1414,12 @@ export function updateCommentReplyTree(component: any) {
   const replyRenderers = Array.from(replyContainer.children)
     .filter(isCommentReplyRenderer)
   const state = existingState ?? getCommentReplyTreeState(component)
+  syncCommentReplyCrossPageMeta(getCommentReplyPaginationIdentity(component), state)
+  // 分页缓存中的其他页不会出现在当前 DOM，但其中的 parent/root 关系
+  // 仍应参与树解析，避免切页后出现「评论不在本页或已丢失」的空占位。
+  paginationState?.pages.forEach(page => cacheCommentReplyTreeMetaList(state, page))
+  pageCache?.pages.forEach(page => cacheCommentReplyTreeMetaList(state, page))
+  getCommentReplyInvisibleIds(component).forEach(rpid => state.replyMetaByRpid.delete(rpid))
   replyRenderers.forEach(renderer => getCommentReplyOriginalOrder(state, renderer))
 
   // 批量加载时，回复节点本身会先后经历 data、用户信息、IP 标签等多次
@@ -1435,6 +1509,10 @@ export function updateCommentReplyTree(component: any) {
     }
   })
 
+  syncCommentReplyCrossPageMeta(getCommentReplyPaginationIdentity(component), state)
+
+  // 第二次同步会合并其他 renderer 的缓存，再移除本地已删除/隐藏的回复。
+  getCommentReplyInvisibleIds(component).forEach(rpid => state.replyMetaByRpid.delete(rpid))
   addMissingCommentReplyTreeParents(nodes, state.replyMetaByRpid, replyContainer)
   const orderedNodes = buildCommentReplyTreeOrder(nodes, state.replyMetaByRpid)
   const rootNodes = orderedNodes
