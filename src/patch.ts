@@ -36,6 +36,11 @@ function patchCommentCustomElement(name: string, classConstructor: unknown) {
     try {
       // 点赞等交互先落到渲染组件，再同步回分页缓存，避免翻页后状态回滚。
       patchCommentComponentUpdate(name, classConstructor, (component) => {
+        // 该分支在下方通用样式分支之前返回，样式补丁须在此自行注入。
+        const root = component.shadowRoot
+        const stylePatch = COMMENT_SHADOW_STYLE_PATCHES[name]
+        if (root && stylePatch)
+          ensureCommentShadowStyle(root, stylePatch.id, stylePatch.css)
         syncRenderedCommentReplyInteraction(component)
       })
     }
