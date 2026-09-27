@@ -93,10 +93,6 @@ export interface CommentReplyTreeState {
   collapsedNodeKeys: Set<string>
   /** 收起某条评论之后的全部同级评论（及子树） */
   collapsedTailKeys: Set<string>
-  /** 展开时缓存的分支收起按钮相对父节点偏移，避免布局移动后复用过期绝对坐标 */
-  branchToggleOffsetByKey: Map<string, number>
-  /** 展开时缓存的平级收起按钮相对父节点偏移 */
-  tailToggleOffsetByKey: Map<string, number>
   /**
    * 按 rpid 缓存回复的 parent/root 等关系。
    * 翻页后用缓存补齐缺失的父评论占位层级。

@@ -3,7 +3,6 @@ import type { CommentReplyTreeCachedMeta, CommentReplyTreeNode, CommentReplyTree
 import { getCommentReplyTreeMode, isCommentReplyContainerEnabled, isCommentReplyLoadMoreEnabled } from '../settings'
 import {
   formatCommentReplyGuideCoordinate,
-  getCommentReplyBranchExpandedToggleY,
   getCommentReplyBranchPath,
   getCommentReplyBranchToggleY,
 } from '../shared/treeGeometry'
@@ -72,8 +71,6 @@ export function getCommentReplyTreeState(component: object): CommentReplyTreeSta
     state = {
       collapsedNodeKeys: new Set(),
       collapsedTailKeys: new Set(),
-      branchToggleOffsetByKey: new Map(),
-      tailToggleOffsetByKey: new Map(),
       replyMetaByRpid: new Map(),
       enabled: false,
       nextOriginalOrder: 0,
@@ -816,15 +813,8 @@ function buildCommentReplyTreeTailCollapses(
     const afterAnchor = avatarAnchorByNode.get(afterSibling)
     if (afterAnchor) {
       const key = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(afterSibling))
-      const cachedOffset = state.tailToggleOffsetByKey.get(key)
-      const cachedY = cachedOffset === undefined
-        ? undefined
-        : parentAnchor.centerY + cachedOffset
-      const fallbackY = afterAnchor.bottom + toggleHitRadius + 4
-      // 缓存优先；至少略低于最后可见评论中心，保证仍落在主干上
-      const y = cachedY !== undefined
-        ? Math.max(afterAnchor.centerY + toggleHitRadius, cachedY)
-        : fallbackY
+      // 收起后按当前可见评论定位，旧的间隔可能已随子树折叠而消失。
+      const y = Math.max(afterAnchor.bottom + toggleHitRadius, afterAnchor.toggleY)
       tails.push({
         collapsed: true,
         hiddenCount: siblings.length - firstHiddenIndex,
@@ -836,7 +826,7 @@ function buildCommentReplyTreeTailCollapses(
     return tails
   }
 
-  // 未收起：在相邻平级评论之间放置收起后续控件，并缓存位置
+  // 未收起：在相邻平级评论之间放置收起后续控件
   for (let index = 0; index < siblings.length - 1; index += 1) {
     const current = siblings[index]
     const next = siblings[index + 1]
@@ -851,7 +841,6 @@ function buildCommentReplyTreeTailCollapses(
 
     const key = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(current))
     const y = currentAnchor.centerY + gap / 2
-    state.tailToggleOffsetByKey.set(key, y - parentAnchor.centerY)
     tails.push({
       collapsed: false,
       hiddenCount: siblings.length - index - 1,
@@ -1125,34 +1114,15 @@ function renderCommentReplyTreeGuides(
 
   const renderedBranches = branches
     .map((branch) => {
-      // 展开且无平级收起时刷新父分支 + 缓存；
-      // 平级收起后子节点变少，勿覆盖缓存，否则父级 − 也会上缩
-      if (!branch.collapsed && branch.trunkExtendY === undefined) {
-        const expandedToggleY = getCommentReplyBranchExpandedToggleY(
-          branch.parentAnchor,
-          branch.childAnchors,
-          toggleHitRadius,
-        )
-        state.branchToggleOffsetByKey.set(
-          branch.key,
-          expandedToggleY - branch.parentAnchor.bottom,
-        )
-      }
-
-      const cachedToggleOffset = state.branchToggleOffsetByKey.get(branch.key)
-      const cachedToggleY = cachedToggleOffset === undefined
-        ? undefined
-        : branch.parentAnchor.bottom + cachedToggleOffset
       const pathData = getCommentReplyBranchPath(
         branch,
         branchRadius,
         toggleHitRadius,
-        cachedToggleY,
       )
       if (!pathData)
         return null
 
-      const toggleY = getCommentReplyBranchToggleY(branch, toggleHitRadius, cachedToggleY)
+      const toggleY = getCommentReplyBranchToggleY(branch, toggleHitRadius)
       return { branch, pathData, toggleY }
     })
     .filter((entry): entry is {
@@ -1502,8 +1472,6 @@ export function updateCommentReplyTree(component: any) {
     replyContainer.querySelectorAll('.bewly-comment-missing-parent').forEach(node => node.remove())
     state.collapsedNodeKeys.clear()
     state.collapsedTailKeys.clear()
-    state.branchToggleOffsetByKey.clear()
-    state.tailToggleOffsetByKey.clear()
     if (state.enabled) {
       const originalOrder = [...replyRenderers].sort((a, b) => (
         getCommentReplyOriginalOrder(state, a) - getCommentReplyOriginalOrder(state, b)
@@ -1529,8 +1497,6 @@ export function updateCommentReplyTree(component: any) {
   if (!showGuides) {
     state.collapsedNodeKeys.clear()
     state.collapsedTailKeys.clear()
-    state.branchToggleOffsetByKey.clear()
-    state.tailToggleOffsetByKey.clear()
   }
 
   observeCommentReplyTreeLayout(component, state, replyContainer)
