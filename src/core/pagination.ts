@@ -688,7 +688,7 @@ export function updateCommentReplyExpandAllControl(renderer: any) {
   const existing = root.querySelector<HTMLButtonElement>(`#${COMMENT_REPLY_EXPAND_ALL_ID}`)
   const state = commentReplyPaginationStates.get(renderer)
   // 分页状态下按钮由 paginationItems 提供；如果再把 DOM 快捷按钮
-  // 插入 pagination-foot，就会出现两个「展开全部回复」。
+  // 插入 pagination-foot，就会出现两个「加载全部」。
   if (renderer.showPagination === true) {
     existing?.remove()
     return
