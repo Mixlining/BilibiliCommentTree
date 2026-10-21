@@ -19,8 +19,12 @@
 ## 安装
 
 1. 浏览器安装 [Tampermonkey](https://www.tampermonkey.net/)
-2. 打开 Tampermonkey 管理面板 → 「实用工具」→「导入文件」，或直接将 `dist/bilibili-comment-tree.user.js` 拖入浏览器
+2. 点击[安装最新版本](https://github.com/Mixlining/BilibiliCommentTree/releases/latest/download/bilibili-comment-tree.user.js)，Tampermonkey 会打开安装页
 3. 访问任意带评论区的 bilibili 页面（视频页、专栏、动态等）即可生效
+
+通过上面的 Release 链接安装后，脚本头包含 `@updateURL` / `@downloadURL`，油猴会按自身更新间隔检查并提示新版本。
+
+本地开发时可直接导入 `pnpm build` 生成的 `dist/bilibili-comment-tree.user.js`。
 
 ## 使用
 
