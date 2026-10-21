@@ -1137,25 +1137,32 @@ export function patchCommentReplyPaginationPrototype(classConstructor: any) {
         queueMicrotask(() => updateCommentReplyPaginationHead(this))
         if (!isCommentReplyLoadMoreEnabled() || this.showPagination !== true || !Array.isArray(items))
           return items
-        const state = getCommentReplyPaginationState(this)
-        const currentPage = Number(this.currentPage) || 1
-        if (state.loading || state.expandAllLoading) {
-          return [{ text: LOADING_TEXT, idx: currentPage, clickable: false }]
-        }
-        if (state.allRepliesExpanded) {
-          return []
-        }
-        const totalPage = Number(this.totalPage) || 0
-        const hasNext = currentPage < totalPage
+        // 该 getter 在 Lit 渲染中调用，增强失败时退回原生分页，不能中断渲染。
+        try {
+          const state = getCommentReplyPaginationState(this)
+          const currentPage = Number(this.currentPage) || 1
+          if (state.loading || state.expandAllLoading) {
+            return [{ text: LOADING_TEXT, idx: currentPage, clickable: false }]
+          }
+          if (state.allRepliesExpanded) {
+            return []
+          }
+          const totalPage = Number(this.totalPage) || 0
+          const hasNext = currentPage < totalPage
 
-        return [
-          ...(hasNext ? [{ text: LOAD_MORE_TEXT, idx: currentPage, clickable: true }] : []),
-          {
-            text: getCommentReplyBatchLabel(this),
-            idx: COMMENT_REPLY_EXPAND_ALL_IDX,
-            clickable: true,
-          },
-        ]
+          return [
+            ...(hasNext ? [{ text: LOAD_MORE_TEXT, idx: currentPage, clickable: true }] : []),
+            {
+              text: getCommentReplyBatchLabel(this),
+              idx: COMMENT_REPLY_EXPAND_ALL_IDX,
+              clickable: true,
+            },
+          ]
+        }
+        catch (error) {
+          console.warn(`[${SCRIPT_NAME}] Failed to build reply pagination items.`, error)
+          return items
+        }
       },
     })
   }
@@ -1168,9 +1175,14 @@ export function patchCommentReplyPaginationPrototype(classConstructor: any) {
       writable: true,
       value(this: any, ...args: any[]) {
         const cleanup = (captureCollapsedList: boolean) => {
-          // 原生收起只结束未完成请求；已加载页必须留给下次展开继续追加。
-          suspendCommentReplyPaginationForNativeCollapse(this, captureCollapsedList)
-          clearCommentReplyTreeState(this)
+          try {
+            // 原生收起只结束未完成请求；已加载页必须留给下次展开继续追加。
+            suspendCommentReplyPaginationForNativeCollapse(this, captureCollapsedList)
+            clearCommentReplyTreeState(this)
+          }
+          catch (error) {
+            console.warn(`[${SCRIPT_NAME}] Failed to reset reply pagination state.`, error)
+          }
         }
         cleanup(false)
         let result: any
@@ -1217,9 +1229,14 @@ export function patchCommentRepliesRendererDisconnect(classConstructor: any) {
       finally {
         // 分页状态保存在 WeakMap 中；临时折叠后若复用同一实例仍可恢复，
         // 这里只释放会形成强引用的树布局与全局可迭代集合。
-        suspendCommentReplyPaginationForNativeCollapse(this, true)
-        getCommentReplyPageCache(this)?.stop()
-        clearCommentReplyTreeState(this)
+        try {
+          suspendCommentReplyPaginationForNativeCollapse(this, true)
+          getCommentReplyPageCache(this)?.stop()
+          clearCommentReplyTreeState(this)
+        }
+        catch (error) {
+          console.warn(`[${SCRIPT_NAME}] Failed to clean up reply renderer state.`, error)
+        }
       }
     },
   })

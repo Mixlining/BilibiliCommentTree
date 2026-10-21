@@ -152,15 +152,31 @@ export function initCommentCustomElementPatching() {
     return
   }
 
-  const { define: originalDefine } = targetWindow.customElements
-  targetWindow.customElements.define = new Proxy(originalDefine, {
-    apply: (target, thisArg, args) => {
-      const [name, classConstructor] = args
-      if (typeof name === 'string')
-        patchCommentCustomElement(name, classConstructor)
-      return Reflect.apply(target, thisArg, args)
-    },
-  })
+  // 补丁异常只能影响本项目自身增强，不能抛进 B 站的组件注册流程，
+  // 否则调用方脚本会在 define 处中断，评论、懒加载等后续初始化随之失效。
+  const safePatchCommentCustomElement = (name: string, classConstructor: unknown) => {
+    try {
+      patchCommentCustomElement(name, classConstructor)
+    }
+    catch (error) {
+      console.warn(`[${SCRIPT_NAME}] Failed to patch ${name}.`, error)
+    }
+  }
+
+  try {
+    const { define: originalDefine } = targetWindow.customElements
+    targetWindow.customElements.define = new Proxy(originalDefine, {
+      apply: (target, thisArg, args) => {
+        const [name, classConstructor] = args
+        if (typeof name === 'string')
+          safePatchCommentCustomElement(name, classConstructor)
+        return Reflect.apply(target, thisArg, args)
+      },
+    })
+  }
+  catch (error) {
+    console.warn(`[${SCRIPT_NAME}] Failed to hook customElements.define.`, error)
+  }
 
   // document_start 仍可能晚于页面内联脚本；回补已经注册的评论组件。
   const commentElementNames = new Set([
@@ -171,5 +187,5 @@ export function initCommentCustomElementPatching() {
     'bili-comment-user-info',
   ])
   for (const name of commentElementNames)
-    patchCommentCustomElement(name, targetWindow.customElements.get(name))
+    safePatchCommentCustomElement(name, targetWindow.customElements.get(name))
 }
