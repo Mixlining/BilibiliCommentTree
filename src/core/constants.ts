@@ -361,10 +361,8 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
       :host([data-bewly-comment-reply-tree]) #expander-contents {
         position: relative;
         /*
-         * 不直接移动 Lit repeat 生成的回复节点。B 站用注释节点保存
-         * keyed repeat 的边界，移动 host 而不移动这些边界会在下一次
-         * requestUpdate 后重新插入同一条回复，表现为整条评论成对重复。
-         * 用 flex order 表达树顺序可以保留原生 DOM 锚点。
+         * 树序优先连同 repeat 边界注释整段写入 DOM（见 setCommentReplyRendererOrder）；
+         * flex order 作为兜底，在识别不到边界时仍保持正确的视觉顺序。
          */
         display: flex;
         flex-direction: column;
