@@ -18,7 +18,7 @@
 
 ## 安装
 
-1. 浏览器安装 [Tampermonkey](https://www.tampermonkey.net/)
+1. 浏览器安装 [Tampermonkey](https://www.tampermonkey.net/) 5.0 或更新版本（菜单增量更新使用其菜单 ID API）
 2. 点击[安装最新版本](https://github.com/Mixlining/BilibiliCommentTree/releases/latest/download/bilibili-comment-tree.user.js)，Tampermonkey 会打开安装页
 3. 访问任意带评论区的 bilibili 页面（视频页、专栏、动态等）即可生效
 
@@ -48,6 +48,8 @@ pnpm build      # 构建产物 dist/bilibili-comment-tree.user.js
 pnpm lint       # ESLint
 pnpm typecheck  # tsc --noEmit
 ```
+
+模块来源、自有设置层职责和验证边界见 [架构说明](docs/architecture.md)。
 
 ## 与原 BewlyCat 扩展的差异
 

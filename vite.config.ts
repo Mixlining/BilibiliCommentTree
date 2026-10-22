@@ -46,7 +46,6 @@ export default defineConfig({
           'GM_setValue',
           'GM_addValueChangeListener',
           'GM_registerMenuCommand',
-          'GM_unregisterMenuCommand',
           'unsafeWindow',
         ],
       },

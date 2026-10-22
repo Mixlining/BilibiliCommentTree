@@ -18,7 +18,10 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
       - run: pnpm build
       # 纯自动生成 Release 说明（GitHub 按 tag 生成），产物作为附件
       - uses: softprops/action-gh-release@v3

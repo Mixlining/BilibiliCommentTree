@@ -24,7 +24,10 @@ if (!scriptGlobal.__BILIBILI_COMMENT_TREE_INITIALIZED__) {
 
   // 设置同步读取；先初始化设置再劫持组件，保证首个组件增强时模式可用。
   initScriptSettings()
-  registerSettingsChangeListener(() => {
+  registerSettingsChangeListener((settings, previous) => {
+    // 总开关关闭期间仅保存偏好，重新开启时统一应用最新配置。
+    if (!settings.enabled && !previous.enabled)
+      return
     refreshCommentReplyTrees()
     if (getCommentReplyTreeMode() === null)
       clearCommentReplyDeepLinkSettlement()
