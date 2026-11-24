@@ -1,0 +1,444 @@
+// 文档级浮层样式：评论树设置面板与错误提示。
+// 颜色全部回退到 B 站原生变量，明暗主题自动适配；组件本身位于浏览器 top layer。
+
+$surface-bg: var(--bg1, #fff);
+$surface-text: var(--text1, #18191c);
+$muted-text: var(--text2, #61666d);
+$faint-text: var(--text3, #9499a0);
+$line-color: var(--line_regular, rgba(0, 0, 0, 0.08));
+$theme-color: var(--brand_blue, #00aeec);
+$danger-color: var(--brand_red, var(--stress_red, #f56c6c));
+$thumb-color: var(--text_white, #fff);
+
+#bewly-comment-settings-dialog {
+  position: fixed;
+  inset: 72px 16px auto auto;
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(72vh, 640px);
+  margin: 0;
+  padding: 0;
+  border: 1px solid $line-color;
+  border-radius: 12px;
+  background: $surface-bg;
+  color: $surface-text;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  overflow: auto;
+  overscroll-behavior: contain;
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0;
+  translate: 0 -8px;
+  transition-property: opacity, translate, display, overlay;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+  transition-behavior: allow-discrete;
+
+  &:popover-open {
+    opacity: 1;
+    translate: 0 0;
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 -8px;
+    }
+  }
+
+  @media (max-width: 520px) {
+    inset: 64px 8px auto;
+    width: auto;
+    max-height: calc(100vh - 80px);
+  }
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bew-space-3, 12px);
+  padding: var(--bew-space-3, 12px) var(--bew-space-4, 16px);
+  border-bottom: 1px solid $line-color;
+  background: $surface-bg;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__title {
+  margin: 0;
+  color: $surface-text;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__icon-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: $faint-text;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__icon-button:is(:hover, :active) {
+  background: var(--graph_bg_thin, var(--bg2, #f1f2f3));
+  color: $surface-text;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__icon-button:focus-visible {
+  outline: 2px solid $theme-color;
+  outline-offset: 2px;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__body {
+  display: grid;
+  gap: var(--bew-space-4, 16px);
+  padding: var(--bew-space-4, 16px);
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__legend {
+  padding: 0;
+  margin: 0 0 var(--bew-space-1, 4px);
+  color: $surface-text;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bew-space-3, 12px);
+  min-height: 32px;
+  color: $muted-text;
+  cursor: pointer;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__hint {
+  margin: var(--bew-space-1, 4px) 0 0;
+  color: $faint-text;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__options {
+  display: grid;
+  gap: 2px;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__option {
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-2, 8px);
+  min-height: 30px;
+  padding: 2px 0;
+  color: $muted-text;
+  cursor: pointer;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__option input[type="radio"] {
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: $theme-color;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__switch {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 22px;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__switch-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__switch-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--graph_bg_thick, var(--bg2, #e3e5e7));
+  pointer-events: none;
+  transition: background-color 150ms ease;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: $thumb-color;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: translate 150ms ease;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__switch-input:checked + .bewly-settings-panel__switch-track {
+  background: $theme-color;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__switch-input:checked + .bewly-settings-panel__switch-track::after {
+  translate: 18px 0;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__switch-input:focus-visible + .bewly-settings-panel__switch-track {
+  outline: 2px solid $theme-color;
+  outline-offset: 2px;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__switch-input:disabled {
+  cursor: not-allowed;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__switch-input:disabled + .bewly-settings-panel__switch-track {
+  opacity: 0.5;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__range-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bew-space-3, 12px);
+  margin-top: var(--bew-space-3, 12px);
+  color: $muted-text;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__range-output {
+  color: $faint-text;
+  font-variant-numeric: tabular-nums;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__range {
+  appearance: none;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    $theme-color var(--bew-settings-range-progress, 0%),
+    var(--graph_bg_thick, var(--bg2, #e3e5e7)) var(--bew-settings-range-progress, 0%)
+  );
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 2px solid $thumb-color;
+  border-radius: 50%;
+  background: $theme-color;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__range:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid $theme-color;
+  outline-offset: 4px;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__range:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bew-space-3, 12px);
+  padding: var(--bew-space-3, 12px) var(--bew-space-4, 16px);
+  border-top: 1px solid $line-color;
+  background: $surface-bg;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__button {
+  min-height: 32px;
+  padding: 0 var(--bew-space-3, 12px);
+  border: 1px solid $line-color;
+  border-radius: 8px;
+  background: transparent;
+  color: $muted-text;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, transform 100ms ease;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__button:is(:hover, :active) {
+  background: var(--graph_bg_thin, var(--bg2, #f1f2f3));
+  color: $surface-text;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__button:active {
+  transform: scale(0.98);
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__button:focus-visible {
+  outline: 2px solid $theme-color;
+  outline-offset: 2px;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__button[data-variant="primary"] {
+  border-color: transparent;
+  background: $theme-color;
+  color: $thumb-color;
+}
+
+#bewly-comment-settings-dialog .bewly-settings-panel__button[data-variant="primary"]:is(:hover, :active) {
+  background: color-mix(in srgb, $theme-color 85%, #000);
+  color: $thumb-color;
+}
+
+#bewly-comment-toast {
+  position: fixed;
+  inset: 76px auto auto 50%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--bew-space-2, 8px);
+  width: max-content;
+  max-width: min(420px, calc(100vw - 32px));
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid $line-color;
+  border-left: 3px solid $danger-color;
+  border-radius: 8px;
+  background: $surface-bg;
+  color: $surface-text;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  font-size: 14px;
+  line-height: 1.5;
+  translate: -50% -8px;
+  opacity: 0;
+  transition-property: opacity, translate, display, overlay;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+  transition-behavior: allow-discrete;
+
+  &:popover-open {
+    opacity: 1;
+    translate: -50% 0;
+
+    @starting-style {
+      opacity: 0;
+      translate: -50% -8px;
+    }
+  }
+}
+
+#bewly-comment-toast .bewly-comment-toast__message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#bewly-comment-toast .bewly-comment-toast__close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin: -2px -4px -2px 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: $faint-text;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+#bewly-comment-toast .bewly-comment-toast__close:is(:hover, :active) {
+  background: var(--graph_bg_thin, var(--bg2, #f1f2f3));
+  color: $surface-text;
+}
+
+#bewly-comment-toast .bewly-comment-toast__close:focus-visible {
+  outline: 2px solid $theme-color;
+  outline-offset: 2px;
+}
+
+.bewly-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #bewly-comment-settings-dialog {
+    translate: 0 0;
+    transition-duration: 80ms;
+
+    &:popover-open {
+      @starting-style {
+        translate: 0 0;
+      }
+    }
+  }
+
+  #bewly-comment-toast {
+    translate: -50% 0;
+    transition-duration: 80ms;
+
+    &:popover-open {
+      @starting-style {
+        translate: -50% 0;
+      }
+    }
+  }
+
+  #bewly-comment-settings-dialog .bewly-settings-panel__switch-track,
+  #bewly-comment-settings-dialog .bewly-settings-panel__switch-track::after,
+  #bewly-comment-settings-dialog .bewly-settings-panel__button,
+  #bewly-comment-toast .bewly-comment-toast__close {
+    transition-duration: 0.01ms;
+  }
+}

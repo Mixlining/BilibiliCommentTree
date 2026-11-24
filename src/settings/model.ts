@@ -25,12 +25,16 @@ export const PAGINATION_MODES: CommentReplyPaginationMode[] = ['loadMore', 'pagi
 
 // 默认值与原 BewlyCat storage.ts 一致：默认启用、线条-不收起主评论、累计加载；
 // 回复容器默认关闭（用户 opt-in），高度默认 480px。
-const DEFAULT_SETTINGS: ScriptSettings = {
+const DEFAULT_SETTINGS: Readonly<ScriptSettings> = Object.freeze({
   enabled: true,
   treeMode: 'lineKeepMain',
   paginationMode: 'loadMore',
   enableCommentReplyTreeContainer: false,
   commentReplyTreeContainerHeight: COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT,
+})
+
+export function createDefaultSettings(): ScriptSettings {
+  return { ...DEFAULT_SETTINGS }
 }
 
 export function normalizeCommentReplyTreeContainerHeight(value: unknown): number {
@@ -46,7 +50,7 @@ export function normalizeCommentReplyTreeContainerHeight(value: unknown): number
 
 export function normalizeSettings(value: unknown): ScriptSettings {
   if (!value || typeof value !== 'object' || Array.isArray(value))
-    return { ...DEFAULT_SETTINGS }
+    return createDefaultSettings()
   const record = value as Record<string, unknown>
   return {
     enabled: typeof record.enabled === 'boolean' ? record.enabled : DEFAULT_SETTINGS.enabled,
