@@ -1,5 +1,6 @@
 import type { CommentReplyInteractionState, CommentReplyLayoutReservation, CommentReplyPaginationState } from './constants'
 import { getCommentReplyTreeMode, isCommentReplyLoadMoreEnabled } from '../settings'
+import { showErrorToast } from '../ui/status'
 import {
   ALL_PAGES_TEXT,
   buildPaginationPageNumberText,
@@ -177,6 +178,7 @@ async function jumpToCommentReplyPage(renderer: any, page: number) {
       renderer.requestUpdate?.()
     }
     console.warn(`[${SCRIPT_NAME}] Failed to change comment reply page.`, error)
+    showErrorToast(`第 ${page} 页回复加载失败，请稍后重试`)
   }
   finally {
     if (state)
@@ -728,6 +730,7 @@ export function updateCommentReplyExpandAllControl(renderer: any) {
     event.stopPropagation()
     void expandAllCommentReplies(renderer).catch((error) => {
       console.warn(`[${SCRIPT_NAME}] Failed to expand all comment replies.`, error)
+      showErrorToast('展开全部回复失败，请稍后重试')
     })
   }
   if (button.parentElement !== target)
@@ -1107,6 +1110,7 @@ export function patchCommentReplyPaginationPrototype(classConstructor: any) {
         if (pageItem?.idx === COMMENT_REPLY_EXPAND_ALL_IDX) {
           return expandAllCommentReplies(this).catch((error) => {
             console.warn(`[${SCRIPT_NAME}] Failed to expand all comment replies.`, error)
+            showErrorToast('展开全部回复失败，请稍后重试')
           })
         }
         const state = getCommentReplyPaginationState(this)

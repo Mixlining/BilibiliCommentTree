@@ -6,6 +6,7 @@ import {
   getCommentReplyBranchPath,
   getCommentReplyBranchToggleY,
 } from '../shared/treeGeometry'
+import { notifyCommentReplyDeepLinkMiss } from '../ui/deep-link-status'
 import {
   COMMENT_REPLY_CONTAINER_ATTRIBUTE,
   COMMENT_REPLY_EXPAND_ALL_ID,
@@ -1763,8 +1764,13 @@ export function scheduleCommentReplyDeepLinkSettlement(reason: 'immediate' | 'ha
     : [0, 100, 300, 600, 1000, 1800, 3000, 5000]
   commentReplyDeepLinkScrollUntil = Date.now() + Math.max(...delays) + 500
 
-  delays.forEach((delay) => {
-    const timer = window.setTimeout(() => {
+  delays.forEach((delay, index) => {
+    let timer = 0
+    timer = window.setTimeout(() => {
+      const timerIndex = commentReplyDeepLinkSettleTimers.indexOf(timer)
+      if (timerIndex >= 0)
+        commentReplyDeepLinkSettleTimers.splice(timerIndex, 1)
+
       // 深链结算时允许更多锚点重试
       commentRepliesRenderers.forEach((component) => {
         const state = commentReplyTreeStates.get(component)
@@ -1772,6 +1778,8 @@ export function scheduleCommentReplyDeepLinkSettlement(reason: 'immediate' | 'ha
           state.layoutRetryCount = 0
       })
       refreshCommentReplyTrees()
+      if (index === delays.length - 1)
+        notifyCommentReplyDeepLinkMiss(getCommentReplyDeepLinkId())
     }, delay)
     commentReplyDeepLinkSettleTimers.push(timer)
   })
