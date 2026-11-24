@@ -21,7 +21,9 @@ BilibiliCommentTree：B 站评论区树状排序与折叠的 Tampermonkey usersc
 ## 代码约定
 
 - 运行在 Tampermonkey 沙箱（MAIN world 等价）：涉及页面全局对象（如 `customElements`）的劫持必须经由 `unsafeWindow`；GM_* 仅用同步 API（`GM_getValue`/`GM_setValue` 等）。
-- 设置一律走 `src/settings.ts`（GM 存储 + GM 菜单），不要重新引入 postMessage 协议或 vue-i18n；
+- 设置一律走 `src/settings.ts`（GM 存储 + 单一 GM 菜单入口）；页内设置面板只调用其导出的 `getScriptSettings`/`updateScriptSettings`，不要重新引入 postMessage 协议或 vue-i18n；
+- 用户主动操作失败的提示统一走 `src/ui/status.ts`，不要在业务模块里各自造 toast；
+- 原生 UI 以 Chrome 150+ 为基线：浮层使用原生 `<dialog popover>` / `popover` 与 top layer，不使用 Vue/框架或新增运行时依赖；不要使用 Chrome 151+ 才有的 `popover="hint"`、`position-visibility: anchor-visible` 等特性。
 - 界面文案硬编码中文。
 - 内部 DOM 标记（`bewly-*` 类名、`data-bewly-*` 属性、`--bew-*` CSS 变量回退）沿用上游命名，为纯内部标识符；颜色必须依赖 B 站原生变量的明暗自动适配，不要硬编码主题色。
 
