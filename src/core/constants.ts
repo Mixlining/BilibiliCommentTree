@@ -212,8 +212,12 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
         background: var(--bew-comment-replies-mask-bg, rgba(var(--bg1_rgb), 0.85)) !important;
       }
 
+      /*
+       * --bew-text-* 仅 BewlyCat 宿主提供；本脚本必须回退到 B 站原生变量，
+       * 否则声明在计算值阶段失效，文本会继承宿主的黑色。
+       */
       #pagination {
-        color: var(--bew-text-3) !important;
+        color: var(--bew-text-2, var(--text2, #61666d)) !important;
       }
 
       #pagination-head:has(+ #${COMMENT_REPLY_PAGE_HEAD_ID}) {
