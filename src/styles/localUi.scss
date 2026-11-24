@@ -1,0 +1,64 @@
+// 本地交互增强：只补充 hover/active/focus/reduced-motion 状态，
+// 不改变上游树布局、分页状态机或内部标记；由 constants.ts 追加到 replies 的 shadow 样式末尾。
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__node,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail__node {
+  transition: stroke 150ms ease, fill 150ms ease;
+}
+
+.bewly-comment-reply-tree-guides
+  .bewly-comment-reply-branch:is(:hover, :focus-visible)
+  .bewly-comment-reply-branch__node,
+.bewly-comment-reply-tree-guides
+  .bewly-comment-reply-tail:is(:hover, :focus-visible)
+  .bewly-comment-reply-tail__node {
+  fill: color-mix(in srgb, var(--bew-theme-color, #00aeec) 12%, var(--bg1, var(--bew-bg, #fff)));
+}
+
+.bewly-comment-reply-tree-guides
+  .bewly-comment-reply-branch:active
+  :is(.bewly-comment-reply-branch__line, .bewly-comment-reply-branch__node, .bewly-comment-reply-branch__symbol),
+.bewly-comment-reply-tree-guides
+  .bewly-comment-reply-tail:active
+  :is(.bewly-comment-reply-tail__node, .bewly-comment-reply-tail__symbol) {
+  stroke-width: 3px;
+}
+
+#bewly-comment-reply-page-select,
+#bewly-comment-expand-all-replies {
+  border-radius: var(--bew-radius-sm, 4px);
+  transition: color 150ms ease, background-color 150ms ease, transform 100ms ease;
+}
+
+#bewly-comment-reply-page-select:active:not(:disabled),
+#bewly-comment-expand-all-replies:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+#bewly-comment-expand-all-replies:hover:not(:disabled) {
+  color: var(--bew-theme-color, #00aeec);
+  background: var(--bew-fill-1, var(--graph_bg_thin, #f1f2f3));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bewly-comment-reply-tree-guides
+    :is(
+      .bewly-comment-reply-branch__line,
+      .bewly-comment-reply-branch__symbol,
+      .bewly-comment-reply-branch__node,
+      .bewly-comment-reply-tail__symbol,
+      .bewly-comment-reply-tail__node
+    ),
+  #bewly-comment-reply-page-select,
+  #bewly-comment-expand-all-replies {
+    transition-duration: 0.01ms;
+  }
+
+  #bewly-comment-reply-page-select:active:not(:disabled),
+  #bewly-comment-expand-all-replies:active:not(:disabled) {
+    transform: none;
+  }
+
+  :host([data-bewly-comment-expand-all-loading]) #expander-contents::after {
+    animation-duration: 2.4s;
+  }
+}

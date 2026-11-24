@@ -1,4 +1,5 @@
 import COMMENT_REPLY_TREE_GUIDES_CSS from '../styles/commentReplyTree.scss?inline'
+import LOCAL_UI_CSS from '../styles/localUi.scss?inline'
 
 export const SCRIPT_NAME = 'BilibiliCommentTree'
 
@@ -37,6 +38,8 @@ export const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
 export const COMMENT_REPLY_CONTAINER_ATTRIBUTE = 'data-bewly-comment-reply-container'
 export const COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE = 'data-bewly-comment-reply-footer-stuck'
 export const COMMENT_REPLY_CONTAINER_HEIGHT_VAR = '--bew-comment-reply-container-height'
+// 设置面板拖动高度时使用的文档级预览变量；未设置时完全沿用上游高度。
+export const COMMENT_REPLY_CONTAINER_PREVIEW_HEIGHT_VAR = '--bew-comment-reply-container-preview-height'
 export const COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT = 240
 export const COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT = 960
 export const COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT = 480
@@ -400,7 +403,7 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
        * 避免回复很多（尤其「展开全部」）时把整层评论和页面撑得过长。
        */
       :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}]) #expander-contents {
-        max-height: var(${COMMENT_REPLY_CONTAINER_HEIGHT_VAR}, 480px);
+        max-height: var(${COMMENT_REPLY_CONTAINER_PREVIEW_HEIGHT_VAR}, var(${COMMENT_REPLY_CONTAINER_HEIGHT_VAR}, 480px));
         overflow-y: auto;
         overflow-x: hidden;
         /*
@@ -468,6 +471,7 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
       }
 
       ${COMMENT_REPLY_TREE_GUIDES_CSS}
+      ${LOCAL_UI_CSS}
     `,
   },
 }
