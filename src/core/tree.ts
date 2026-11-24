@@ -9,6 +9,7 @@ import {
 import {
   COMMENT_REPLY_CONTAINER_ATTRIBUTE,
   COMMENT_REPLY_EXPAND_ALL_ID,
+  COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE,
   COMMENT_REPLY_TREE_FALLBACK_AVATAR_RADIUS,
   COMMENT_REPLY_TREE_GUIDES_ID,
   COMMENT_REPLY_TREE_INDENT_STEP,
@@ -272,6 +273,8 @@ function disconnectCommentReplyTreeResizeObserver(state: CommentReplyTreeState) 
   state.observedTargetsKey = undefined
   state.replyContainerMutationObserver?.disconnect()
   state.replyContainerMutationObserver = undefined
+  state.replyContainerScrollAbort?.abort()
+  state.replyContainerScrollAbort = undefined
   state.observedReplyContainer = undefined
   state.imageLoadAbort?.abort()
   state.imageLoadAbort = undefined
@@ -280,6 +283,21 @@ function disconnectCommentReplyTreeResizeObserver(state: CommentReplyTreeState) 
     cancelAnimationFrame(state.layoutUpdateRaf)
     state.layoutUpdateRaf = undefined
   }
+}
+
+/** 仅在回复容器产生纵向溢出且尚未滚到底部时，才将吸底栏标为遮挡态以显示底衬 */
+function syncCommentReplyFooterStuckState(component: any, replyContainer: HTMLElement | null) {
+  if (!(component instanceof HTMLElement))
+    return
+
+  if (!component.hasAttribute(COMMENT_REPLY_CONTAINER_ATTRIBUTE) || !replyContainer) {
+    component.removeAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE)
+    return
+  }
+
+  const isOverflowing = replyContainer.scrollHeight > replyContainer.clientHeight + 1
+  const isAtBottom = replyContainer.scrollTop + replyContainer.clientHeight >= replyContainer.scrollHeight - 1
+  component.toggleAttribute(COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE, isOverflowing && !isAtBottom)
 }
 
 /**
@@ -440,6 +458,14 @@ function observeCommentReplyTreeLayout(
         scheduleCommentReplyTreeLayoutUpdate(component)
     })
     observer.observe(replyContainer, { childList: true })
+    state.replyContainerScrollAbort?.abort()
+    const scrollAbort = new AbortController()
+    replyContainer.addEventListener(
+      'scroll',
+      () => syncCommentReplyFooterStuckState(component, replyContainer),
+      { passive: true, signal: scrollAbort.signal },
+    )
+    state.replyContainerScrollAbort = scrollAbort
     state.observedReplyContainer = replyContainer
     state.replyContainerMutationObserver = observer
   }
@@ -1679,6 +1705,7 @@ export function updateCommentReplyTree(component: any) {
   else {
     removeCommentReplyTreeGuides(component, replyContainer)
   }
+  syncCommentReplyFooterStuckState(component, replyContainer)
   updateCommentReplyExpandAllControl(component)
   state.enabled = true
 }

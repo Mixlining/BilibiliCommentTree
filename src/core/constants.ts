@@ -35,6 +35,7 @@ export const COMMENT_REPLY_EXPAND_ALL_IDX = -2
 export const COMMENT_REPLY_BATCH_PAGE_LIMIT = 5
 export const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
 export const COMMENT_REPLY_CONTAINER_ATTRIBUTE = 'data-bewly-comment-reply-container'
+export const COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE = 'data-bewly-comment-reply-footer-stuck'
 export const COMMENT_REPLY_CONTAINER_HEIGHT_VAR = '--bew-comment-reply-container-height'
 export const COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT = 240
 export const COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT = 960
@@ -105,6 +106,7 @@ export interface CommentReplyTreeState {
   resizeObserver?: ResizeObserver
   observedReplyContainer?: HTMLElement
   replyContainerMutationObserver?: MutationObserver
+  replyContainerScrollAbort?: AbortController
   imageLoadAbort?: AbortController
   imageLoadListeners?: WeakSet<HTMLImageElement>
   layoutUpdateRaf?: number
@@ -408,6 +410,11 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
          */
         /* 滚动条出现/消失都不改变可用宽度，避免缩进与线条被反复重算 */
         scrollbar-gutter: stable;
+        /*
+         * 吸底收起栏的 z-index 只在容器内比较。B 站吸底评论框（fixed, z-index: 1）
+         * 在 DOM 中位于楼层之前，同级比较时会被收起栏/「共 x 条回复」盖住。
+         */
+        isolation: isolate;
       }
 
       /* 原生「收起回复」在回复列表末尾；滚动时钉在容器底边保持可达 */
@@ -415,8 +422,16 @@ export const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: str
         position: sticky;
         bottom: 0;
         z-index: 1;
+        transition: background-color var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+      }
+
+      /*
+       * 仅在容器溢出且未滚到底部（底栏压在下方回复上）时铺底防叠字，
+       * 避免未展开的「共 x 条回复」出现实色横条。
+       */
+      :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}][${COMMENT_REPLY_FOOTER_STUCK_ATTRIBUTE}]) #expander-contents > #expander-footer {
         /* 只依赖 B 站原生背景变量，明暗主题自动适配 */
-        background: var(--bg1, var(--bew-bg, #fff));
+        background: var(--bg1, #fff);
       }
 
       .bewly-comment-missing-parent__body {
