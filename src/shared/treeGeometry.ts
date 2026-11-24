@@ -1,5 +1,4 @@
-// 共享评论区树状线条的 SVG 几何计算；本模块不访问浏览器或存储。
-// 自 BewlyCat src/utils/commentReplyTree.ts 原样搬移。
+// 共享原生评论区与动态预览的 SVG 几何计算；本模块不访问浏览器或存储。
 export interface CommentReplyAvatarAnchor {
   bottom: number
   centerX: number

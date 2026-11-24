@@ -1,5 +1,4 @@
-// 评论区树状线条和折叠控件样式（自 BewlyCat src/styles/commentReplyTree.scss 原样搬移）。
-// 颜色全部回退到 B 站原生 CSS 变量（--bg1/--text2/--line_regular 等），明暗主题自动适配。
+// 视频原生评论与动态预览共用树状线条和折叠控件样式。
 .bewly-comment-reply-tree-guides {
   position: absolute;
   inset: 0;
@@ -60,7 +59,7 @@
 
 .bewly-comment-reply-tree-guides .bewly-comment-reply-branch__node,
 .bewly-comment-reply-tree-guides .bewly-comment-reply-tail__node {
-  fill: var(--bg1, var(--bew-bg, #fff));
+  fill: var(--bew-comment-tree-node-bg, var(--bg1, var(--bew-bg, #fff)));
   stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
   stroke-width: var(--bew-space-0-5, 2px);
 }
